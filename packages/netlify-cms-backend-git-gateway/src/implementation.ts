@@ -27,10 +27,13 @@ import {
   PreviewState,
 } from 'netlify-cms-lib-util';
 import { GitHubBackend } from 'netlify-cms-backend-github';
+import { GiteaBackend } from 'netlify-cms-backend-gitea';
 import { GitLabBackend } from 'netlify-cms-backend-gitlab';
+
 import { BitbucketBackend, API as BitBucketAPI } from 'netlify-cms-backend-bitbucket';
 import GitHubAPI from './GitHubAPI';
 import GitLabAPI from './GitLabAPI';
+import GitEaAPI from './GitEaAPI';
 import AuthenticationPage from './AuthenticationPage';
 import { getClient, Client } from './netlify-lfs-client';
 
@@ -129,7 +132,7 @@ const apiGet = async (path: string) => {
 
 export default class GitGateway implements Implementation {
   config: Config;
-  api?: GitHubAPI | GitLabAPI | BitBucketAPI;
+  api?: GitHubAPI | GitLabAPI | GitEaAPI | BitBucketAPI;
   branch: string;
   squashMerges: boolean;
   cmsLabelPrefix: string;
@@ -140,14 +143,14 @@ export default class GitGateway implements Implementation {
   backendType: string | null;
   apiUrl: string;
   authClient?: AuthClient;
-  backend: GitHubBackend | GitLabBackend | BitbucketBackend | null;
+  backend: GitHubBackend | GitLabBackend | GiteaBackend | BitbucketBackend | null;
   acceptRoles?: string[];
   tokenPromise?: () => Promise<string>;
   _largeMediaClientPromise?: Promise<Client>;
 
   options: {
     proxied: boolean;
-    API: GitHubAPI | GitLabAPI | BitBucketAPI | null;
+    API: GitHubAPI | GitLabAPI | GitEaAPI | BitBucketAPI | null;
     initialWorkflowStatus: string;
   };
   constructor(config: Config, options = {}) {
@@ -346,6 +349,9 @@ export default class GitGateway implements Implementation {
       } else if (this.backendType === 'gitlab') {
         this.api = new GitLabAPI(apiConfig);
         this.backend = new GitLabBackend(this.config, { ...this.options, API: this.api });
+      } else if (this.backendType === 'gitea') {
+        this.api = new GitEaAPI(apiConfig);
+        this.backend = new GiteaBackend(this.config, { ...this.options, API: this.api });
       } else if (this.backendType === 'bitbucket') {
         this.api = new BitBucketAPI({
           ...apiConfig,
